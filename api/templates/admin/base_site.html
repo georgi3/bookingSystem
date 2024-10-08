@@ -1,0 +1,10 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}
+    {{ site_title|default:"Number 1 Barbershop" }}
+{% endblock %}
+
+{% block branding %}
+   <h1 id="site-name"><a href="{% url 'admin:index' %}" style="color: #fff;">{{ site_header|default:"Number 1 Barbershop" }}</a></h1>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <div class="content-section">
+    <h2>Report Summary</h2>
+
+    <!-- Date Filter Form -->
+    <form method="get" action="">
+      {% csrf_token %}
+      <label for="start_date">Start Date:</label>
+      <input type="date" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+
+      <label for="end_date">End Date:</label>
+      <input type="date" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+
+      <button type="submit">Filter</button>
+    </form>
+
+    <!-- Earnings Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Total Earnings</th>
+          <th>Total Earnings After Margin (60%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${{ report_data.earnings_total }}</td>
+          <td>${{ report_data.earnings_after_margin }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
