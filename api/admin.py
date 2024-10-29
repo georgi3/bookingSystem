@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth.admin import UserAdmin
 from datetime import timedelta
 from api.models.enums import BookingStatus
@@ -8,6 +10,7 @@ from api.formsets import SelectedServicesInlineFormset
 from django.utils import timezone
 from django.contrib import admin
 from django.contrib.auth.models import User as UserDefaultModel
+import pandas as pd
 
 
 class UserExtraInline(admin.StackedInline):
@@ -159,6 +162,10 @@ class BookingAdmin(admin.ModelAdmin):
     list_editable = ['status']
 
 
+import plotly.graph_objs as go
+from plotly.offline import plot
+
+
 class BarberAdmin(admin.ModelAdmin):
     inlines = [BookingInline, TimeOffRequestInline, BarberQualificationInline, BarberScheduleInline]
     list_display = ('user', 'get_appointments_count_today', 'get_expected_earnings_today')
@@ -195,22 +202,6 @@ class BarberAdmin(admin.ModelAdmin):
                     earnings += service.service.price
         return f'${earnings:.2f}'
 
-    def get_total_earnings(self, start_date, end_date):
-        """
-        Helper function to calculate total earnings between two dates.
-        """
-        appointments = Booking.objects.filter(
-            Q(status=BookingStatus.CONFIRMED) | Q(status=BookingStatus.COMPLETED),
-            booking_date__range=(start_date, end_date)
-        ).prefetch_related('selectedservice_set__service')
-
-        total_earnings = 0
-        for appointment in appointments:
-            for service in appointment.selectedservice_set.all():
-                total_earnings += service.service.price
-
-        return total_earnings
-
     def get_report_data(self, start_date=None, end_date=None):
         """
         Calculate earnings based on the date range.
@@ -221,13 +212,34 @@ class BarberAdmin(admin.ModelAdmin):
             start_date = today
         if not end_date:
             end_date = today
+        df = pd.DataFrame(Barber.prepare_df_data(start_date, end_date))
+        # earnings_total = self.get_total_earnings(start_date, end_date)
+        # print(df)
+        df['barberCut'] = df['servicePrice'] * df['barberMargin'] / 100
+        df['shopCut'] = df['servicePrice'] * (100 - df['barberMargin']) / 100
 
-        earnings_total = self.get_total_earnings(start_date, end_date)
-        earnings_after_margin = earnings_total * 0.6  # 60% margin
+        earnings_total = df['servicePrice'].sum()
+        earnings_after_margin = df['shopCut'].sum()
 
+        traces = []
+        total_earnings = df.groupby('bookingDate')['servicePrice'].sum()
+        trace = go.Scatter(x=total_earnings.index, y=total_earnings.values, mode='lines', name='Total')
+        traces.append(trace)
+        for barber in df['barberName'].unique():
+            barberDf = df[df['barberName'] == barber]
+            barber_earnings = barberDf.groupby('bookingDate')['servicePrice'].sum()
+            trace = go.Scatter(x=barber_earnings.index, y=barber_earnings.values, mode='lines', name=barber)
+            traces.append(trace)
+        layout = go.Layout(
+            title='Projected Earnings Per Day',
+            xaxis=dict(title='Date'),
+            yaxis=dict(title='Earnings'),
+        )
+        fig = go.Figure(data=traces, layout=layout)
         return {
             'earnings_total': earnings_total,
             'earnings_after_margin': earnings_after_margin,
+            'plot_div': fig.to_html()
         }
 
     def changelist_view(self, request, extra_context=None):

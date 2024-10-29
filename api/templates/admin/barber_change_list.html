@@ -20,8 +20,8 @@
     <table>
       <thead>
         <tr>
-          <th>Total Earnings</th>
-          <th>Total Earnings After Margin (60%)</th>
+          <th>Earnings Per Period</th>
+          <th>Earnings Per Period After Margin</th>
         </tr>
       </thead>
       <tbody>
@@ -31,5 +31,11 @@
         </tr>
       </tbody>
     </table>
+  <div>
+      <br>
+      <div style="max-width: 80%">
+        {{ report_data.plot_div  | safe}}
+      </div>
+  </div>
   </div>
 {% endblock %}

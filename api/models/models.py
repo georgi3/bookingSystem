@@ -1,7 +1,13 @@
+import datetime
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 from datetime import time
+
+from django.db.models import Sum, F, Q, Value
+from django.db.models.functions import Concat
+
 from api.models.validations import phoneValidation, ssnValidation, validate_duration, validate_margin
 from .enums import ProvinceChoices, Weekday, BookingStatus
 
@@ -126,6 +132,21 @@ class Barber(models.Model):
 
     def __str__(self):
         return f"Barber {self.user.username.capitalize()}"
+
+    @staticmethod
+    def prepare_df_data(start_date: datetime.date, end_date: datetime.date):
+        data = Booking.objects.filter(Q(booking_date__range=(start_date, end_date))).annotate(
+            bookingId=F('id'),
+            barberId=F('barber__id'),
+            # barberName=Concat(F('barber__user__first_name'), Value(' '), F('barber__user__last_name')),
+            barberName=F('barber__user__username'),
+            barberMargin=F('barber__agreedMargin'),
+            bookingDate=F('booking_date'),
+            servicePrice=F('selectedservice__service__price'),
+            serviceName=F('selectedservice__service__name')
+        ).values('bookingId', 'barberId', 'barberName', 'barberMargin', 'bookingDate', 'servicePrice', 'serviceName')
+
+        return list(data)
 
 
 class Service(models.Model):
