@@ -207,14 +207,18 @@ class BarberAdmin(admin.ModelAdmin):
         Calculate earnings based on the date range.
         Default date range is today.
         """
+        df = pd.DataFrame(Barber.prepare_df_data(start_date, end_date))
+        if len(df) == 0:
+            return None
+
         today = timezone.now().date()
         if not start_date:
             start_date = today
         if not end_date:
             end_date = today
-        df = pd.DataFrame(Barber.prepare_df_data(start_date, end_date))
         # earnings_total = self.get_total_earnings(start_date, end_date)
         # print(df)
+
         df['barberCut'] = df['servicePrice'] * df['barberMargin'] / 100
         df['shopCut'] = df['servicePrice'] * (100 - df['barberMargin']) / 100
 
