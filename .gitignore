@@ -1,0 +1,28 @@
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+/media/
+.env
+*.log
+*.pot
+*.mo
+*.sqlite3
+
+# Django Migrations
+**/migrations/*.py
+**/migrations/*.pyc
+
+# JetBrains (PyCharm, IntelliJ)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+._*
