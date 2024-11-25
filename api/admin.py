@@ -134,7 +134,7 @@ class ServiceAdmin(admin.ModelAdmin):
 class TimeOffRequestAdmin(admin.ModelAdmin):
     list_display = ['barber', 'date', 'start_time', 'end_time']
 
-    fields = ['date', 'start_time', 'end_time', 'reason']
+    fields = ['date', 'start_time', 'end_time', 'reason', 'isApproved']
     # TODO: only superuser* manager should see it
 
     def get_queryset(self, request):
@@ -146,6 +146,14 @@ class TimeOffRequestAdmin(admin.ModelAdmin):
         if request.user.is_staff and hasattr(request.user, 'barber'):
             return qs.filter(barber__user=request.user)
         return qs
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Make 'isApproved' field readonly for staff users who are not superusers.
+        """
+        if not request.user.is_superuser and request.user.is_staff:
+            return ['isApproved']
+        return super().get_readonly_fields(request, obj)
 
     def save_model(self, request, obj, form, change):
         """
