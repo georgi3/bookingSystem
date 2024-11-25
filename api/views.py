@@ -21,51 +21,38 @@ def get_qualified_barbers(request):
         return Response({"error": "Service ID is required."}, status=400)
 
     qualified_barbers = Barber.objects.filter(barberqualification__service_id=service_id)
-    serializer = BarberSerializer(qualified_barbers, many=True)
+    serializer = BarberSerializer(qualified_barbers, many=True, context={'request': request})
     return Response(serializer.data)
 
 @api_view(['GET'])
-def get_available_dates(request):
-    """Returns list of available dates for the provided service id and barber id."""
-    service_id = request.query_params.get('service_id')
+def get_blocked_dates(request):
+    """
+    Returns a list of dates that are fully booked or unavailable for a given barber.
+    """
+    print('CALLED BLOCKED DATES')
     barber_id = request.query_params.get('barber_id')
 
-    if not service_id or not barber_id:
-        return Response({"error": "Service ID and Barber ID are required."}, status=400)
+    if not barber_id:
+        return Response({"error": "Barber ID is required."}, status=400)
 
-    # Fetch service duration
-    service = Service.objects.get(id=service_id)
-    duration = timedelta(minutes=service.duration)
-
-    # Fetch barber's schedule
-    schedules = BarberSchedule.objects.filter(barber_id=barber_id)
-
-    # Fetch existing bookings and time off requests
-    existing_bookings = Booking.objects.filter(barber_id=barber_id)
-    time_off_requests = TimeOffRequest.objects.filter(barber_id=barber_id, isApproved=True)
-
-    available_dates = []
     today = datetime.now().date()
-    for schedule in schedules:
-        weekday = schedule.day_of_week
-        start_time = schedule.start_time
-        end_time = schedule.end_time
 
-        # Check availability for the next 30 days
-        for i in range(30):
-            date = today + timedelta(days=i)
-            if date.strftime("%A") == weekday:
-                # Ensure there is enough time for the service within working hours
-                if (datetime.combine(date, end_time) - datetime.combine(date, start_time)) >= duration:
-                    # Check for time off requests
-                    if time_off_requests.filter(date=date).exists():
-                        continue
+    # Fetch bookings and time-off requests starting from today
+    bookings = Booking.objects.filter(barber_id=barber_id, booking_date__gte=today)
+    time_off_requests = TimeOffRequest.objects.filter(barber_id=barber_id, date__gte=today, isApproved=True)
 
-                    # Check for existing bookings
-                    if not existing_bookings.filter(booking_date=date).exists():
-                        available_dates.append(date)
+    # Identify dates with full bookings or time-off requests
+    blocked_dates = set()
 
-    return Response([date.strftime('%Y-%m-%d') for date in available_dates])
+    for booking in bookings:
+        blocked_dates.add(booking.booking_date)
+
+    for time_off in time_off_requests:
+        blocked_dates.add(time_off.date)
+
+    # Return sorted blocked dates
+    return Response(sorted([date.strftime('%Y-%m-%d') for date in blocked_dates]))
+
 
 @api_view(['GET'])
 def get_available_timeslots(request):

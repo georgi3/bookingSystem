@@ -70,6 +70,13 @@ class Barber(models.Model):
         verbose_name="User Account",
         help_text="The user associated with this barber."
     )
+    position = models.CharField(
+        verbose_name="Barber's Position",
+        default="Senior Barber",
+        max_length=40,
+        blank=False,
+        null=True,
+    )
 
     agreedMargin = models.PositiveIntegerField(
         verbose_name="Barber's Margin.",
@@ -153,7 +160,7 @@ class Service(models.Model):
     name = models.CharField(max_length=255, verbose_name="Service Name")
     price = models.FloatField(verbose_name="Service Price")
     description = models.TextField(verbose_name="Service Description", blank=True, null=True)
-    image = models.ImageField(upload_to='service_images/', blank=True, null=True, verbose_name="Service Image")
+    # image = models.ImageField(upload_to='service_images/', blank=True, null=True, verbose_name="Service Image")
     duration = models.PositiveIntegerField(verbose_name="Service Duration", validators=[validate_duration], help_text='Enter Service Duration in Minutes')
 
     class Meta:
