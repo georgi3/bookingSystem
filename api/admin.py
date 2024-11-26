@@ -231,7 +231,7 @@ class BarberAdmin(admin.ModelAdmin):
         df['shopCut'] = df['servicePrice'] * (100 - df['barberMargin']) / 100
 
         earnings_total = df['servicePrice'].sum()
-        earnings_after_margin = df['shopCut'].sum()
+        earnings_after_margin = df['shopCut'].sum().round(2)
 
         traces = []
         total_earnings = df.groupby('bookingDate')['servicePrice'].sum()
